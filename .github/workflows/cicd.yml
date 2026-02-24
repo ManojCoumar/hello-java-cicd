@@ -64,7 +64,7 @@ jobs:
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/hello-java:latest
 
-deploy-to-k8s:
+  deploy-to-k8s:
 
     needs: docker-build-push
     runs-on: ubuntu-latest
