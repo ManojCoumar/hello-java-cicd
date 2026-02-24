@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI CD Pipeline
 
 on:
   push:
@@ -63,3 +63,28 @@ jobs:
     - name: Push Docker Image
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/hello-java:latest
+
+deploy-to-k8s:
+
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup Kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: v1.29.0
+
+    - name: Configure Kubeconfig
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/
+        kubectl rollout status deployment/hello-java
