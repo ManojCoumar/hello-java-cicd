@@ -65,26 +65,32 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/hello-java:latest
 
   deploy-to-k8s:
-
     needs: docker-build-push
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          minikube-version: 'latest'
+          driver: docker
 
-    - name: Setup Kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: v1.29.0
+      - name: Verify Minikube is running
+        run: |
+          kubectl get nodes
+          minikube status
 
-    - name: Configure Kubeconfig
-      run: |
-        mkdir -p ~/.kube
-        printf "%s" "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+      - name: Pull Docker image into Minikube
+        run: |
+          eval $(minikube docker-env)
+          docker pull manojravichandiran/hello-java:latest
 
-    - name: Deploy to Kubernetes
-      run: |
-        kubectl apply -f k8s/
-        kubectl rollout status deployment/hello-java
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/hello-java --timeout=120s
+          kubectl get pods
+          kubectl get services
